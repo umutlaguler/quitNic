@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "quitnic",
-    "slug": "quitnic",
+    "name": "Quit Nicotine",
+    "slug": "quit-nicotine",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,17 +13,31 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "newArchEnabled": true,
+      "supportsTablet": true,
+      "bundleIdentifier": "com.umutlaguler.quitnicotine",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.umutlaguler.quitnicotine"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "@react-native-community/datetimepicker"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "a4fc449b-7d9b-45b7-a7b8-31971d332a99"
+      }
     }
   }
 }
