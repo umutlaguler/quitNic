@@ -1,0 +1,58 @@
+{
+  "common": {
+    "done": "Tamam",
+    "cancel": "İptal",
+    "save": "Kaydet",
+    "continue": "Devam Et",
+    "back": "Geri"
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "subtitle": "Deneyiminizi kişiselleştirin.",
+    "language": "Dil Seçeneği",
+    "reminder_title": "Günlük Hatırlatıcı",
+    "reminder_sub": "İstikrarlı kalmak için günde bir bildirim alın.",
+    "reminder_time": "Hatırlatıcı saati",
+    "onboarding_title": "Kurulum",
+    "onboarding_sub": "Kurulumu sıfırla. Bu işlem tüm ilerlemenizi silecektir.",
+    "reset_btn": "Kurulumu Sıfırla",
+    "choose_time": "Bir saat seçin"
+  },
+  "home": {
+    "days_free": "Gün Sigarasız",
+    "money_saved": "TASARRUF EDİLEN",
+    "daily_cost": "GÜNLÜK MALİYET",
+    "spend_avoided": "Kaçınılan harcama",
+    "life_regained": "Geri kazanılan ömür",
+    "log_craving": "İstek Kaydet",
+    "recent_activity": "Son Aktiviteler",
+    "no_activity": "Henüz bir kayıt yok.",
+    "quote": "“Şu an aldığın her nefes, gelecekteki kendine verdiğin bir hediyedir.”"
+  },
+  "craving_modal": {
+    "title": "İstek Kontrolü",
+    "subtitle": "Şu an ne kadar güçlü hissediyorsun?",
+    "note_placeholder": "Nasıl hissediyorsun? (örn. stresli)",
+    "i_smoked": "İçtim (Maalesef)",
+    "i_made_it": "Dayandım (Başardım)"
+  },
+  "breathing": {
+    "title": "Derin Bir Nefes Al",
+    "subtitle": "Yolculuk hatalardan değil, vazgeçmekten ibarettir. Sakinleş ve yeniden odaklan.",
+    "instruction": "Nefes Al... Nefes Ver...",
+    "finish": "Hazırım"
+  },
+  "onboarding": {
+    "step1_title": "Ne kullanıyorsun?",
+    "step1_sub": "Planını kişiselleştirmek için bir seçenek belirle.",
+    "step2_title": "Ne zaman bırakmak istersin?",
+    "step2_sub": "Bir tarih seç. Daha sonra değiştirebilirsin.",
+    "step3_title": "Günlük harcama",
+    "step3_sub": "Sigara için günde ortalama ne kadar harcıyorsun?",
+    "summary_title": "İncele ve Onayla",
+    "summary_sub": "Her şeyin doğru göründüğünden emin ol.",
+    "product_label": "Ürün",
+    "date_label": "Bırakma Tarihi",
+    "cost_label": "Günlük Maliyet"
+  }
+}

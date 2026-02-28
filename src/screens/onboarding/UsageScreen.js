@@ -3,8 +3,11 @@ import { View, Text, StyleSheet, Pressable, TextInput } from "react-native";
 import OnboardingLayout from "../../components/onboarding/OnboardingLayout";
 import PrimaryButton from "../../components/onboarding/PrimaryButton";
 import { useOnboarding } from "../../OnboardingContext";
+import { useTranslation } from "react-i18next";
+
 
 export default function UsageScreen({ navigation }) {
+  const { t } = useTranslation();
   const { data, update } = useOnboarding();
 
   const [mode, setMode] = useState(() => {
@@ -37,7 +40,7 @@ export default function UsageScreen({ navigation }) {
       canGoBack={true}
       footer={
         <PrimaryButton
-          title="Continue"
+          title={t('common.continue')}
           disabled={!canContinue}
           onPress={() => {
             commitDailyCost();
@@ -46,9 +49,9 @@ export default function UsageScreen({ navigation }) {
         />
       }
     >
-      <Text style={styles.title}>Daily spending</Text>
+      <Text style={styles.title}>{t('onboarding.step3_title')}</Text>
       <Text style={styles.subtitle}>
-        On average, how much do you spend per day for cigarettes?
+        {t('onboarding.step3_sub')}
       </Text>
 
       <View style={styles.list}>

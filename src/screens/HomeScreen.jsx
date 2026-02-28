@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useOnboarding } from "../OnboardingContext";
+import { useTranslation } from "react-i18next";
 
 // ✅ Akciğer görselleri
 const LUNGS = {
@@ -21,6 +22,7 @@ const LUNGS = {
   second: require("../../assets/secondStageLung.png"),
   third: require("../../assets/thirdStageLung.png"),
 };
+
 
 const CRAVING_LOGS_KEY = "craving_logs_v1";
 
@@ -90,6 +92,7 @@ async function appendCravingLog(entry) {
 }
 
 export default function HomeScreen({ navigation }) {
+  const { t } = useTranslation();
   const { data, update } = useOnboarding();
   const now = Date.now();
 
@@ -231,7 +234,7 @@ export default function HomeScreen({ navigation }) {
         {/* HEADER */}
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.bigTitle}>{smokeFreeDays} Days Smoke-free</Text>
+            <Text style={styles.bigTitle}>{smokeFreeDays} {t('home.days_free')}</Text>
             <Text style={styles.smallSub}>{stageLabel}</Text>
           </View>
         <View>
@@ -263,13 +266,13 @@ export default function HomeScreen({ navigation }) {
         {/* Stat cards */}
         <View style={styles.cardsRow}>
           <StatCard
-            label="MONEY SAVED"
+            label= {t('home.money_saved')}
             value={formatMoneyUSD(moneySaved)}
             sub={`Baseline: ${formatMoneyUSD(dailyCost)}/day`}
             subColor="green"
           />
           <StatCard
-            label="DAILY BASELINE"
+            label= {t('home.daily_cost')}
             value={formatMoneyUSD(dailyCost)}
             sub="per day"
             subColor="muted"
@@ -278,9 +281,9 @@ export default function HomeScreen({ navigation }) {
 
         {/* List */}
         <View style={styles.list}>
-          <ListRow leftTitle="Spend avoided" rightValue={formatMoneyUSD(moneySaved)} iconText="$" />
+          <ListRow leftTitle={t('home.spend_avoided')} rightValue={formatMoneyUSD(moneySaved)} iconText="$" />
           <Divider />
-          <ListRow leftTitle="Life regained" rightValue={formatDuration(totalSmokeFreeMs)} iconText="⏱" />
+          <ListRow leftTitle={t('home.life_regained')} rightValue={formatDuration(totalSmokeFreeMs)} iconText="⏱" />
         </View>
 
         {/* CTA */}
@@ -288,17 +291,17 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.ctaIcon}>
             <Text style={styles.ctaIconText}>＋</Text>
           </View>
-          <Text style={styles.ctaText}>Log a Craving</Text>
+          <Text style={styles.ctaText}>{t('home.log_craving')}</Text>
         </Pressable>
 
         {/* Recent check-ins */}
         <View style={styles.recentWrap}>
-          <Text style={styles.recentTitle}>Recent check-ins</Text>
+          <Text style={styles.recentTitle}>{t('home.recent_activity')}</Text>
 
           {recent.length === 0 ? (
             <View style={styles.recentEmpty}>
               <Text style={styles.recentEmptyText}>
-                No check-ins yet. Logging cravings can reveal patterns.
+                {t('home.no_activity')}
               </Text>
             </View>
           ) : (
@@ -339,7 +342,7 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         <Text style={styles.quote}>
-          “Every breath you take now is a gift you gave your future self.”
+          {t('home.quote')}
         </Text>
 
         <Text style={styles.footerHint}>Tracking: {productLabel}</Text>
@@ -358,13 +361,13 @@ export default function HomeScreen({ navigation }) {
           >
             <View style={styles.modalCard}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Craving check-in</Text>
+                <Text style={styles.modalTitle}>{t('craving_modal.title')}</Text>
                 <Pressable onPress={closeCraving} hitSlop={12} style={({ pressed }) => [pressed && { opacity: 0.85 }]}>
                   <Text style={styles.modalClose}>✕</Text>
                 </Pressable>
               </View>
 
-              <Text style={styles.modalSub}>How strong is it right now?</Text>
+              <Text style={styles.modalSub}>{t('craving_modal.subtitle')}</Text>
 
               <View style={styles.emojiRow}>
                 {EMOJIS.map((x) => {
@@ -390,7 +393,7 @@ export default function HomeScreen({ navigation }) {
               <TextInput
                 value={note}
                 onChangeText={setNote}
-                placeholder="What are you feeling? (e.g., stressed, angry, restless)"
+                placeholder={t('craving_modal.note_placeholder')} 
                 placeholderTextColor="rgba(255,255,255,0.35)"
                 multiline
                 style={styles.noteInput}
@@ -398,11 +401,11 @@ export default function HomeScreen({ navigation }) {
 
               <View style={styles.actionRow}>
                 <Pressable onPress={() => saveCraving("smoked")} style={({ pressed }) => [styles.leftBtn, pressed && { opacity: 0.9 }]}>
-                  <Text style={styles.leftBtnText}>I had a {data.productType}</Text>
+                  <Text style={styles.leftBtnText}>{t('craving_modal.i_smoked')} {data.productType}</Text>
                 </Pressable>
 
                 <Pressable onPress={() => saveCraving("made_it")} style={({ pressed }) => [styles.rightBtn, pressed && { opacity: 0.9 }]}>
-                  <Text style={styles.rightBtnText}>I got through it</Text>
+                  <Text style={styles.rightBtnText}>{t('craving_modal.i_made_it')} </Text>
                 </Pressable>
               </View>
 
@@ -420,9 +423,9 @@ export default function HomeScreen({ navigation }) {
       <Modal visible={supportOpen} transparent animationType="fade" onRequestClose={() => setSupportOpen(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.supportCard}>
-            <Text style={styles.supportTitle}>It happens.</Text>
+            <Text style={styles.supportTitle}>{t('breathing.title')}</Text>
             <Text style={styles.supportSub}>
-              This doesn’t erase your progress. We’re simply starting a new streak from today — gently.
+              {t('breathing.subtitle')}
             </Text>
 
             <View style={styles.breathCard}>
@@ -444,7 +447,7 @@ export default function HomeScreen({ navigation }) {
               onPress={() => setSupportOpen(false)}
               style={({ pressed }) => [styles.supportBtn, pressed && { opacity: 0.9 }]}
             >
-              <Text style={styles.supportBtnText}>Done</Text>
+              <Text style={styles.supportBtnText}>{t('breathing.finish')}</Text>
             </Pressable>
           </View>
         </View>

@@ -4,6 +4,8 @@ import OnboardingLayout from "../../components/onboarding/OnboardingLayout";
 import PrimaryButton from "../../components/onboarding/PrimaryButton";
 import { useOnboarding } from "../../OnboardingContext";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { useTranslation } from "react-i18next";
+
 
 
 function startOfDay(d) {
@@ -13,6 +15,7 @@ function startOfDay(d) {
 }
 
 export default function QuitDateScreen({ navigation }) {
+    const { t } = useTranslation();
     const { data, update } = useOnboarding();
 
     const [showPicker, setShowPicker] = useState(false);
@@ -74,14 +77,14 @@ export default function QuitDateScreen({ navigation }) {
       canGoBack={true}
       footer={
         <PrimaryButton
-          title="Continue"
+          title={t('common.continue')}
           disabled={!canContinue}
           onPress={() => navigation.navigate("usageScreen")} // ✅ summary değil, sıradaki adım Usage
         />
       }
     >
-      <Text style={styles.title}>When do you want to quit?</Text>
-      <Text style={styles.subtitle}>Pick a date. You can change it later.</Text>
+      <Text style={styles.title}>{t('onboarding.step2_title')}</Text>
+      <Text style={styles.subtitle}>{t('onboarding.step2_sub')}</Text>
 
       <View style={styles.list}>
         <SelectCard

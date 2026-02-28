@@ -1,0 +1,58 @@
+{
+  "common": {
+    "done": "Done",
+    "cancel": "Cancel",
+    "save": "Save",
+    "continue": "Continue",
+    "back": "Back"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Customize your experience.",
+    "language": "Language",
+    "reminder_title": "Daily Reminder",
+    "reminder_sub": "Get one notification per day to stay consistent.",
+    "reminder_time": "Reminder time",
+    "onboarding_title": "Onboarding",
+    "onboarding_sub": "Reset your setup. This will remove your progress.",
+    "reset_btn": "Reset Onboarding",
+    "choose_time": "Choose a time"
+  },
+  "home": {
+    "days_free": "Days Smoke-free",
+    "money_saved": "MONEY SAVED",
+    "daily_cost": "DAILY BASELINE",
+    "spend_avoided": "Spend avoided",
+    "life_regained": "Life regained",
+    "log_craving": "Log a Craving",
+    "recent_activity": "Recent Activity",
+    "no_activity": "No activity yet.",
+    "quote": "“Every breath you take now is a gift you gave your future self.”"
+  },
+  "craving_modal": {
+    "title": "Craving Check-in",
+    "subtitle": "How strong is it right now?",
+    "note_placeholder": "How are you feeling? (e.g. stressed)",
+    "i_smoked": "I smoked",
+    "i_made_it": "I got through it"
+  },
+  "breathing": {
+    "title": "Take a Deep Breath",
+    "subtitle": "The journey is not about mistakes, but about not giving up. Calm down and refocus.",
+    "instruction": "Inhale... Exhale...",
+    "finish": "I'm Ready"
+  },
+  "onboarding": {
+    "step1_title": "What do you use?",
+    "step1_sub": "Select an option to personalize your plan.",
+    "step2_title": "When do you want to quit?",
+    "step2_sub": "Pick a date. You can change it later.",
+    "step3_title": "Daily spending",
+    "step3_sub": "How much do you spend on average per day?",
+    "summary_title": "Review & Confirm",
+    "summary_sub": "Make sure everything looks right.",
+    "product_label": "Product",
+    "date_label": "Quit Date",
+    "cost_label": "Daily Cost"
+  }
+}

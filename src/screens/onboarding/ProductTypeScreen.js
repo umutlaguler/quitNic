@@ -4,6 +4,8 @@ import OnboardingLayout from "../../components/onboarding/OnboardingLayout";
 import PrimaryButton from "../../components/onboarding/PrimaryButton";
 import OptionCard from "../../components/onboarding/OptionCard";
 import { useOnboarding } from "../../OnboardingContext";
+import { useTranslation } from "react-i18next";
+
 
 const icons = {
   cigarettes: require("../../../assets/smoking.png"),
@@ -12,6 +14,7 @@ const icons = {
 };
 
 export default function ProductTypeScreen({ navigation }) {
+  const { t } = useTranslation();
   const { data, update } = useOnboarding();
   const selected = data.productType;
 
@@ -23,14 +26,14 @@ export default function ProductTypeScreen({ navigation }) {
       canGoBack={false}
       footer={
         <PrimaryButton
-          title="Continue"
+          title={t('common.continue')}
           disabled={!selected}
           onPress={() => navigation.navigate("quitDateScreen")}
         />
       }
     >
-      <Text style={styles.title}>What do you use?</Text>
-      <Text style={styles.subtitle}>Select one option to personalize your plan.</Text>
+      <Text style={styles.title}>{t('onboarding.step1_title')}</Text>
+      <Text style={styles.subtitle}>{t('onboarding.step1_sub')}</Text>
 
       <View style={styles.list}>
         <OptionCard

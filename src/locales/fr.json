@@ -1,0 +1,58 @@
+{
+  "common": {
+    "done": "Terminé",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "continue": "Continuer",
+    "back": "Retour"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "subtitle": "Personnalisez votre expérience.",
+    "language": "Langue",
+    "reminder_title": "Rappel Quotidien",
+    "reminder_sub": "Recevez une notification par jour pour rester assidu.",
+    "reminder_time": "Heure du rappel",
+    "onboarding_title": "Configuration",
+    "onboarding_sub": "Réinitialisez votre configuration. Cela supprimera votre progression.",
+    "reset_btn": "Réinitialiser la configuration",
+    "choose_time": "Choisissez une heure"
+  },
+  "home": {
+    "days_free": "Jours sans tabac",
+    "money_saved": "ARGENT ÉCONOMISÉ",
+    "daily_cost": "COÛT QUOTIDIEN",
+    "spend_avoided": "Dépenses évitées",
+    "life_regained": "Vie regagnée",
+    "log_craving": "Enregistrer une envie",
+    "recent_activity": "Activité Récente",
+    "no_activity": "Aucune activité pour le moment.",
+    "quote": "« Chaque respiration est un cadeau pour votre futur moi. »"
+  },
+  "craving_modal": {
+    "title": "Contrôle de l'Envie",
+    "subtitle": "Quelle est l'intensité actuelle ?",
+    "note_placeholder": "Comment vous sentez-vous ?",
+    "i_smoked": "J'ai fumé",
+    "i_made_it": "J'ai tenu bon"
+  },
+  "breathing": {
+    "title": "Prenez une respiration",
+    "subtitle": "Le voyage n'est pas une question d'erreurs, mais de ne pas abandonner. Calmez-vous.",
+    "instruction": "Inspirer... Expirer...",
+    "finish": "Je suis prêt"
+  },
+  "onboarding": {
+    "step1_title": "Que consommez-vous ?",
+    "step1_sub": "Sélectionnez une option pour personnaliser votre plan.",
+    "step2_title": "Quand arrêter ?",
+    "step2_sub": "Choisissez une date. Modifiable plus tard.",
+    "step3_title": "Dépenses quotidiennes",
+    "step3_sub": "Combien dépensez-vous en moyenne par jour ?",
+    "summary_title": "Révision et Confirmation",
+    "summary_sub": "Vérifiez que tout est correct.",
+    "product_label": "Produit",
+    "date_label": "Date d'arrêt",
+    "cost_label": "Coût quotidien"
+  }
+}

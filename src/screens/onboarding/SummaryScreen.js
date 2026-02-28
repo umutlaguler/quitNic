@@ -5,6 +5,7 @@ import PrimaryButton from "../../components/onboarding/PrimaryButton";
 import { useOnboarding } from "../../OnboardingContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { STORAGE_KEYS } from "../../storage/keys"; // yolun sende buysa
+import { useTranslation } from "react-i18next";
 
 
 function formatDate(iso) {
@@ -42,6 +43,7 @@ function mapProductType(x) {
 }
 
 export default function SummaryScreen({ navigation }) {
+  const { t } = useTranslation();
   const { data, markOnboardingDone } = useOnboarding();
   const quitDateText = useMemo(() => formatDate(data.quitDateISO), [data.quitDateISO]);
   const dailySpendText = useMemo(() => formatMoneyUSD(data.dailyCost), [data.dailyCost]);
@@ -76,30 +78,30 @@ const finish = async () => {
       canGoBack={true}
       footer={
         <PrimaryButton
-          title="Start"
+          title={t('common.save')}
           disabled={!canContinue}
           onPress={finish}
         />
       }
     >
-      <Text style={styles.title}>Review & confirm</Text>
-      <Text style={styles.subtitle}>Make sure everything looks right.</Text>
+      <Text style={styles.title}>{t('onboarding.summary_title')}</Text>
+      <Text style={styles.subtitle}>{t('onboarding.summary_sub')}</Text>
 
       <View style={styles.card}>
         <SummaryRow
-          label="Product"
+          label={t('onboarding.product_label')}
           value={mapProductType(data.productType)}
           onEdit={() => navigation.navigate("productTypeScreen")}
         />
         <Divider />
         <SummaryRow
-          label="Quit date"
+          label={t('onboarding.date_label')}
           value={quitDateText}
           onEdit={() => navigation.navigate("quitDateScreen")}
         />
         <Divider />
         <SummaryRow
-          label="Daily spending"
+          label={t('onboarding.cost_label')}
           value={dailySpendText}
           onEdit={() => navigation.navigate("usageScreen")}
         />
