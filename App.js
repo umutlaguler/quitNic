@@ -12,8 +12,18 @@ import SettingsScreen from "./src/screens/SettingsScreen";
 import { OnboardingProvider } from "./src/OnboardingContext";
 import { STORAGE_KEYS } from "./src/storage/keys";
 import PlayScreen from "./src/screens/PlayScreen";
+import { initializeApp, getApps } from '@react-native-firebase/app';
 
 const Root = createNativeStackNavigator();
+// Daha güvenli bir başlatma kontrolü
+try {
+  if (getApps().length === 0) {
+    initializeApp();
+  }
+} catch (e) {
+  // Eğer zaten varsa getApp() ile devam et diyebiliriz
+  console.log("Firebase başlatma sırasında: ", e);
+}
 
 export default function App() {
   const [booting, setBooting] = useState(true);
