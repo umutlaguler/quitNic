@@ -16,8 +16,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useOnboarding } from "../OnboardingContext";
 import { useTranslation } from "react-i18next";
-// Eski hali: import analytics from '@react-native-firebase/analytics';
-import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
+import { posthog } from "../../App";
 
 // ✅ Dinamik Mesaj Fonksiyonu
 const getPanicMessage = (seconds) => {
@@ -26,7 +25,7 @@ const getPanicMessage = (seconds) => {
   if (seconds > 50) return "Halfway there! Notice how the intensity is shifting.";
   if (seconds > 35) return "You are stronger than a 90-second urge. Keep holding.";
   if (seconds > 15) return "Almost through the peak. Just a little longer.";
-  if (seconds > 0)  return "The finish line is right there. Don't let go now!";
+  if (seconds > 0) return "The finish line is right there. Don't let go now!";
   return "You did it. The urge is losing its power.";
 };
 
@@ -108,6 +107,21 @@ export default function HomeScreen({ navigation }) {
   const { data, update } = useOnboarding();
   const now = Date.now();
 
+  // ✅ PostHog helper (tek yerden)
+  const track = (event, props = {}) => {
+    try {
+      if (posthog) {
+        posthog.capture(event, {
+          screen: "HomeScreen",
+          productType: data?.productType ?? null,
+          ...props,
+        });
+      }
+    } catch (e) {
+      console.log("PostHog capture error:", e);
+    }
+  };
+
   // -------------------------
   // EMERGENCY PANIC STATE
   // -------------------------
@@ -188,15 +202,29 @@ export default function HomeScreen({ navigation }) {
 
   useEffect(() => {
     refreshRecent();
+
+    // ✅ Home screen viewed
+    track("home_viewed", {
+      smokeFreeDays,
+      stageKey,
+      dailyCost,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const openCraving = () => {
     setIntensity(3);
     setNote("");
     setCravingOpen(true);
+
+    // ✅ Craving modal opened
+    track("craving_modal_opened", { smokeFreeDays, stageKey });
   };
 
-  const closeCraving = () => setCravingOpen(false);
+  const closeCraving = () => {
+    setCravingOpen(false);
+    track("craving_modal_closed", { smokeFreeDays });
+  };
 
   const EMOJIS = [
     { v: 1, e: "😌", t: "Easy" },
@@ -207,6 +235,16 @@ export default function HomeScreen({ navigation }) {
   ];
 
   const saveCraving = async (outcome) => {
+    // ✅ Before save event
+    track("craving_saved", {
+      outcome, 
+      intensity: panicOpen ? 5 : intensity,
+      via: panicOpen ? "panic_mode" : "manual_log",
+      has_note: !!note?.trim(),
+      smokeFreeDays,
+      stageKey,
+    });
+
     const entry = {
       id: `${Date.now()}_${Math.random().toString(16).slice(2)}`,
       createdAtISO: new Date().toISOString(),
@@ -224,30 +262,42 @@ export default function HomeScreen({ navigation }) {
         streakStartISO: todayISO,
         lastSlipISO: todayISO,
       });
+
       closeCraving();
-      resetPanic(); 
-      setTimeout(() => setSupportOpen(true), 200);
+      resetPanic();
+
+      setTimeout(() => {
+        setSupportOpen(true);
+        // ✅ Support modal opened after slip
+        track("support_modal_opened", { reason: "slip", smokeFreeDays });
+      }, 200);
       return;
     }
+
     closeCraving();
     resetPanic();
   };
 
   // -------------------------
-  // EMERGENCY TIMER LOGIC (WITH VIBRATION & DYNAMIC MSGS)
+  // EMERGENCY TIMER LOGIC
   // -------------------------
   const openPanicModal = () => {
     resetPanic();
     setPanicOpen(true);
+
+    // ✅ Panic mode opened
+    track("panic_opened", { smokeFreeDays, stageKey });
   };
 
   const startPanicTimer = () => {
     setIsHolding(true);
     setShowRetryMsg(false);
-    
-    // ✅ Basıldığı an yumuşak titreşim
-    if (Platform.OS === 'ios') {
-      Vibration.vibrate(10); 
+
+    // ✅ Panic hold started
+    track("panic_hold_started", { smokeFreeDays, remaining_seconds: panicSeconds });
+
+    if (Platform.OS === "ios") {
+      Vibration.vibrate(10);
     } else {
       Vibration.vibrate(40);
     }
@@ -258,7 +308,10 @@ export default function HomeScreen({ navigation }) {
           clearInterval(timerRef.current);
           setPanicSuccess(true);
           setIsHolding(false);
-          // ✅ Bittiğinde başarı titreşimi
+
+          // ✅ Panic completed successfully
+          track("panic_completed", { smokeFreeDays, duration_seconds: 90 });
+
           Vibration.vibrate([0, 100, 50, 100]);
           return 0;
         }
@@ -270,8 +323,11 @@ export default function HomeScreen({ navigation }) {
   const stopPanicTimer = () => {
     setIsHolding(false);
     clearInterval(timerRef.current);
+
+    // ✅ Panic hold cancelled / released early
     if (panicSeconds > 0 && !panicSuccess) {
       setShowRetryMsg(true);
+      track("panic_hold_released_early", { smokeFreeDays, remaining_seconds: panicSeconds });
     }
   };
 
@@ -283,24 +339,16 @@ export default function HomeScreen({ navigation }) {
     setShowRetryMsg(false);
     setIsHolding(false);
   };
- const handlePlayGamePress = async () => {
-  try {
-    const { getAnalytics, logEvent } = require('@react-native-firebase/analytics');
-    const { getApp } = require('@react-native-firebase/app');
-    
-    // Uygulama hazır mı kontrol et, değilse sessizce geç
-    const app = getApp(); 
-    if (app) {
-      logEvent(getAnalytics(app), 'zippo_play_game_click', {
-        smoke_free_days_count: smokeFreeDays
-      });
-    }
-  } catch (e) {
-    console.log("Loglama atlandı, Firebase hazır değil.");
-  }
 
-  navigation.navigate("playScreen");
-};
+  const onPressSettings = () => {
+    track("settings_clicked", { smokeFreeDays });
+    navigation.navigate("settingsScreen");
+  };
+
+  const onPressPlay = () => {
+    track("play_game_clicked", { smokeFreeDays });
+    navigation.navigate("playScreen");
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -308,20 +356,23 @@ export default function HomeScreen({ navigation }) {
         {/* HEADER */}
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.bigTitle}>{smokeFreeDays} {t('home.days_free')}</Text>
+            <Text style={styles.bigTitle}>
+              {smokeFreeDays} {t("home.days_free")}
+            </Text>
             <Text style={styles.smallSub}>{stageLabel}</Text>
           </View>
           <View>
             <Pressable
-              onPress={() => navigation.navigate("settingsScreen")}
+              onPress={onPressSettings}
               style={({ pressed }) => [styles.settingsBtn, pressed && { opacity: 0.85 }]}
               hitSlop={12}
             >
               <Text style={styles.settingsIcon}>⚙</Text>
               <Text style={styles.settingsText}>Settings</Text>
             </Pressable>
+
             <Pressable
-              onPress={handlePlayGamePress}
+              onPress={onPressPlay}
               style={({ pressed }) => [styles.settingsBtn, pressed && { opacity: 0.85 }]}
               hitSlop={12}
             >
@@ -337,13 +388,13 @@ export default function HomeScreen({ navigation }) {
 
         <View style={styles.cardsRow}>
           <StatCard
-            label={t('home.money_saved')}
+            label={t("home.money_saved")}
             value={formatMoneyUSD(moneySaved)}
             sub={`Baseline: ${formatMoneyUSD(dailyCost)}/day`}
             subColor="green"
           />
           <StatCard
-            label={t('home.daily_cost')}
+            label={t("home.daily_cost")}
             value={formatMoneyUSD(dailyCost)}
             sub="per day"
             subColor="muted"
@@ -351,14 +402,14 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         <View style={styles.list}>
-          <ListRow leftTitle={t('home.spend_avoided')} rightValue={formatMoneyUSD(moneySaved)} iconText="$" />
+          <ListRow leftTitle={t("home.spend_avoided")} rightValue={formatMoneyUSD(moneySaved)} iconText="$" />
           <Divider />
-          <ListRow leftTitle={t('home.life_regained')} rightValue={formatDuration(totalSmokeFreeMs)} iconText="⏱" />
+          <ListRow leftTitle={t("home.life_regained")} rightValue={formatDuration(totalSmokeFreeMs)} iconText="⏱" />
         </View>
 
         {/* --- PANIC BUTTON --- */}
-        <Pressable 
-          style={({ pressed }) => [styles.panicBtn, pressed && { opacity: 0.9 }]} 
+        <Pressable
+          style={({ pressed }) => [styles.panicBtn, pressed && { opacity: 0.9 }]}
           onPress={openPanicModal}
         >
           <Text style={styles.panicBtnText}>🚨 EMERGENCY: I WANT TO SMOKE</Text>
@@ -369,15 +420,15 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.ctaIcon}>
             <Text style={styles.ctaIconText}>＋</Text>
           </View>
-          <Text style={styles.ctaText}>{t('home.log_craving')}</Text>
+          <Text style={styles.ctaText}>{t("home.log_craving")}</Text>
         </Pressable>
 
         {/* Recent activity */}
         <View style={styles.recentWrap}>
-          <Text style={styles.recentTitle}>{t('home.recent_activity')}</Text>
+          <Text style={styles.recentTitle}>{t("home.recent_activity")}</Text>
           {recent.length === 0 ? (
             <View style={styles.recentEmpty}>
-              <Text style={styles.recentEmptyText}>{t('home.no_activity')}</Text>
+              <Text style={styles.recentEmptyText}>{t("home.no_activity")}</Text>
             </View>
           ) : (
             <View style={styles.recentList}>
@@ -391,10 +442,20 @@ export default function HomeScreen({ navigation }) {
                       <Text style={styles.recentLine1}>
                         {formatShortDate(x.createdAtISO)} • {formatTime(x.createdAtISO)} • Intensity {x.intensity}/5
                       </Text>
-                      {!!x.note && <Text numberOfLines={1} style={styles.recentNote}>{x.note}</Text>}
+                      {!!x.note && (
+                        <Text numberOfLines={1} style={styles.recentNote}>
+                          {x.note}
+                        </Text>
+                      )}
                     </View>
                   </View>
-                  <Text style={[styles.recentRight, x.outcome === "made_it" && { color: "rgba(0,255,160,0.85)" }, x.outcome === "smoked" && { color: "rgba(255,255,255,0.55)" }]}>
+                  <Text
+                    style={[
+                      styles.recentRight,
+                      x.outcome === "made_it" && { color: "rgba(0,255,160,0.85)" },
+                      x.outcome === "smoked" && { color: "rgba(255,255,255,0.55)" },
+                    ]}
+                  >
                     {x.outcome === "made_it" ? "Got through" : "Slip"}
                   </Text>
                 </View>
@@ -403,13 +464,13 @@ export default function HomeScreen({ navigation }) {
           )}
         </View>
 
-        <Text style={styles.quote}>{t('home.quote')}</Text>
+        <Text style={styles.quote}>{t("home.quote")}</Text>
         <Text style={styles.footerHint}>Tracking: {productLabel}</Text>
         <View style={{ height: 30 }} />
       </ScrollView>
 
       {/* -------------------------
-          EMERGENCY PANIC MODAL (UPDATED WITH DYNAMIC TEXT)
+          EMERGENCY PANIC MODAL
       -------------------------- */}
       <Modal visible={panicOpen} transparent animationType="fade" onRequestClose={resetPanic}>
         <View style={styles.modalOverlay}>
@@ -417,24 +478,21 @@ export default function HomeScreen({ navigation }) {
             {!panicSuccess ? (
               <>
                 <Text style={styles.panicModalTitle}>Stay Calm. We're here.</Text>
-                
-                {/* Dinamik mesaj alanı - Sabit yükseklik korundu */}
-                <View style={{ height: 60, justifyContent: 'center' }}>
-                    <Text style={styles.panicModalSub}>
-                        {getPanicMessage(panicSeconds)}
-                    </Text>
+
+                <View style={{ height: 60, justifyContent: "center" }}>
+                  <Text style={styles.panicModalSub}>{getPanicMessage(panicSeconds)}</Text>
                 </View>
 
                 <View style={styles.panicTimerContainer}>
                   <Text style={styles.panicCountdown}>{panicSeconds}s</Text>
-                  
+
                   <Pressable
                     onPressIn={startPanicTimer}
                     onPressOut={stopPanicTimer}
                     style={({ pressed }) => [
                       styles.holdCircle,
                       isHolding && styles.holdCircleActive,
-                      pressed && { transform: [{ scale: 0.95 }] }
+                      pressed && { transform: [{ scale: 0.95 }] },
                     ]}
                   >
                     <Text style={styles.holdText}>{isHolding ? "RELAX & BREATHE" : "HOLD TO START"}</Text>
@@ -447,7 +505,13 @@ export default function HomeScreen({ navigation }) {
                   </Text>
                 )}
 
-                <Pressable onPress={resetPanic} style={styles.panicCancelBtn}>
+                <Pressable
+                  onPress={() => {
+                    track("panic_closed", { smokeFreeDays, remaining_seconds: panicSeconds });
+                    resetPanic();
+                  }}
+                  style={styles.panicCancelBtn}
+                >
                   <Text style={styles.panicCancelText}>I changed my mind</Text>
                 </Pressable>
               </>
@@ -459,15 +523,15 @@ export default function HomeScreen({ navigation }) {
                 </Text>
 
                 <View style={styles.panicActionRow}>
-                  <Pressable 
-                    onPress={() => saveCraving("made_it")} 
+                  <Pressable
+                    onPress={() => saveCraving("made_it")}
                     style={[styles.panicResultBtn, { backgroundColor: "#00C853" }]}
                   >
                     <Text style={styles.panicResultText}>Better, I won't smoke</Text>
                   </Pressable>
 
-                  <Pressable 
-                    onPress={() => saveCraving("smoked")} 
+                  <Pressable
+                    onPress={() => saveCraving("smoked")}
                     style={[styles.panicResultBtn, { backgroundColor: "rgba(255,255,255,0.1)" }]}
                   >
                     <Text style={styles.panicResultText}>Still need it, I'll smoke</Text>
@@ -480,47 +544,103 @@ export default function HomeScreen({ navigation }) {
       </Modal>
 
       {/* -------------------------
-          MEVCUT MODALLAR (Craving & Support)
+          CRAVING MODAL
       -------------------------- */}
       <Modal visible={cravingOpen} transparent animationType="fade" onRequestClose={closeCraving}>
         <View style={styles.modalOverlay}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ width: "100%" }}>
             <View style={styles.modalCard}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>{t('craving_modal.title')}</Text>
-                <Pressable onPress={closeCraving} hitSlop={12}><Text style={styles.modalClose}>✕</Text></Pressable>
+                <Text style={styles.modalTitle}>{t("craving_modal.title")}</Text>
+                <Pressable
+                  onPress={closeCraving}
+                  hitSlop={12}
+                >
+                  <Text style={styles.modalClose}>✕</Text>
+                </Pressable>
               </View>
-              <Text style={styles.modalSub}>{t('craving_modal.subtitle')}</Text>
+
+              <Text style={styles.modalSub}>{t("craving_modal.subtitle")}</Text>
+
               <View style={styles.emojiRow}>
                 {EMOJIS.map((x) => (
-                  <Pressable key={x.v} onPress={() => setIntensity(x.v)} style={[styles.emojiChip, intensity === x.v && styles.emojiChipSelected]}>
+                  <Pressable
+                    key={x.v}
+                    onPress={() => {
+                      setIntensity(x.v);
+                      track("craving_intensity_selected", { value: x.v, label: x.t, smokeFreeDays });
+                    }}
+                    style={[styles.emojiChip, intensity === x.v && styles.emojiChipSelected]}
+                  >
                     <Text style={styles.emoji}>{x.e}</Text>
                     <Text style={styles.emojiLabel}>{x.t}</Text>
                   </Pressable>
                 ))}
               </View>
-              <TextInput value={note} onChangeText={setNote} placeholder={t('craving_modal.note_placeholder')} placeholderTextColor="rgba(255,255,255,0.35)" multiline style={styles.noteInput} />
+
+              <TextInput
+                value={note}
+                onChangeText={(val) => {
+                  setNote(val);
+                  if (val?.length === 1) track("craving_note_started", { smokeFreeDays });
+                }}
+                placeholder={t("craving_modal.note_placeholder")}
+                placeholderTextColor="rgba(255,255,255,0.35)"
+                multiline
+                style={styles.noteInput}
+              />
+
               <View style={styles.actionRow}>
-                <Pressable onPress={() => saveCraving("smoked")} style={styles.leftBtn}><Text style={styles.leftBtnText}>{t('craving_modal.i_smoked')} {data.productType}</Text></Pressable>
-                <Pressable onPress={() => saveCraving("made_it")} style={styles.rightBtn}><Text style={styles.rightBtnText}>{t('craving_modal.i_made_it')} </Text></Pressable>
+                <Pressable onPress={() => saveCraving("smoked")} style={styles.leftBtn}>
+                  <Text style={styles.leftBtnText}>
+                    {t("craving_modal.i_smoked")} {data.productType}
+                  </Text>
+                </Pressable>
+
+                <Pressable onPress={() => saveCraving("made_it")} style={styles.rightBtn}>
+                  <Text style={styles.rightBtnText}>{t("craving_modal.i_made_it")} </Text>
+                </Pressable>
               </View>
             </View>
           </KeyboardAvoidingView>
         </View>
       </Modal>
 
-      <Modal visible={supportOpen} transparent animationType="fade" onRequestClose={() => setSupportOpen(false)}>
+      {/* -------------------------
+          SUPPORT MODAL
+      -------------------------- */}
+      <Modal
+        visible={supportOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setSupportOpen(false);
+          track("support_modal_closed", { smokeFreeDays });
+        }}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.supportCard}>
-            <Text style={styles.supportTitle}>{t('breathing.title')}</Text>
-            <Text style={styles.supportSub}>{t('breathing.subtitle')}</Text>
+            <Text style={styles.supportTitle}>{t("breathing.title")}</Text>
+            <Text style={styles.supportSub}>{t("breathing.subtitle")}</Text>
+
             <View style={styles.breathCard}>
               <Text style={styles.breathTitle}>30-second reset</Text>
               <View style={styles.breathSteps}>
-                <BreathStep label="Inhale" value="4s" /><BreathStep label="Hold" value="4s" /><BreathStep label="Exhale" value="6s" />
+                <BreathStep label="Inhale" value="4s" />
+                <BreathStep label="Hold" value="4s" />
+                <BreathStep label="Exhale" value="6s" />
               </View>
             </View>
-            <Pressable onPress={() => setSupportOpen(false)} style={styles.supportBtn}><Text style={styles.supportBtnText}>{t('breathing.finish')}</Text></Pressable>
+
+            <Pressable
+              onPress={() => {
+                setSupportOpen(false);
+                track("support_modal_finished", { smokeFreeDays });
+              }}
+              style={styles.supportBtn}
+            >
+              <Text style={styles.supportBtnText}>{t("breathing.finish")}</Text>
+            </Pressable>
           </View>
         </View>
       </Modal>
@@ -533,7 +653,17 @@ function StatCard({ label, value, sub, subColor = "muted" }) {
     <View style={styles.statCard}>
       <Text style={styles.statLabel}>{label}</Text>
       <Text style={styles.statValue}>{value}</Text>
-      {!!sub && <Text style={[styles.statSub, subColor === "green" && { color: "rgba(0,255,160,0.75)" }, subColor === "muted" && { color: "rgba(255,255,255,0.55)" }]}>{sub}</Text>}
+      {!!sub && (
+        <Text
+          style={[
+            styles.statSub,
+            subColor === "green" && { color: "rgba(0,255,160,0.75)" },
+            subColor === "muted" && { color: "rgba(255,255,255,0.55)" },
+          ]}
+        >
+          {sub}
+        </Text>
+      )}
     </View>
   );
 }
@@ -542,7 +672,9 @@ function ListRow({ leftTitle, rightValue, iconText }) {
   return (
     <View style={styles.row}>
       <View style={styles.rowLeft}>
-        <View style={styles.rowIcon}><Text style={styles.rowIconText}>{iconText}</Text></View>
+        <View style={styles.rowIcon}>
+          <Text style={styles.rowIconText}>{iconText}</Text>
+        </View>
         <Text style={styles.rowTitle}>{leftTitle}</Text>
       </View>
       <Text style={styles.rowRight}>{rightValue}</Text>
@@ -550,7 +682,10 @@ function ListRow({ leftTitle, rightValue, iconText }) {
   );
 }
 
-function Divider() { return <View style={styles.divider} />; }
+function Divider() {
+  return <View style={styles.divider} />;
+}
+
 function BreathStep({ label, value }) {
   return (
     <View style={styles.breathStep}>
@@ -566,20 +701,54 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
   bigTitle: { color: "#fff", fontSize: 34, fontWeight: "900" },
   smallSub: { color: "rgba(255,255,255,0.55)", marginTop: 6, fontSize: 13 },
-  settingsBtn: { marginBottom: 4, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" },
+  settingsBtn: {
+    marginBottom: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
+  },
   settingsIcon: { color: "#2D6BFF", fontSize: 18, fontWeight: "900" },
   settingsText: { color: "rgba(255,255,255,0.8)", fontSize: 13, fontWeight: "800" },
   lungWrap: { marginTop: 18, alignItems: "center", justifyContent: "center" },
   lungImage: { width: "60%", height: 260 },
   cardsRow: { flexDirection: "row", gap: 12, marginTop: 14 },
-  statCard: { flex: 1, borderRadius: 18, padding: 16, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" },
+  statCard: {
+    flex: 1,
+    borderRadius: 18,
+    padding: 16,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
+  },
   statLabel: { color: "rgba(255,255,255,0.55)", fontSize: 12, fontWeight: "900", letterSpacing: 1 },
   statValue: { color: "#fff", fontSize: 28, fontWeight: "900", marginTop: 10 },
   statSub: { marginTop: 8, fontSize: 12, fontWeight: "800" },
-  list: { marginTop: 14, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)", overflow: "hidden" },
+  list: {
+    marginTop: 14,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
+    overflow: "hidden",
+  },
   row: { paddingHorizontal: 14, paddingVertical: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   rowLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
-  rowIcon: { width: 34, height: 34, borderRadius: 12, backgroundColor: "rgba(0,0,0,0.25)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center" },
+  rowIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: "rgba(0,0,0,0.25)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   rowIconText: { color: "#2D6BFF", fontWeight: "900" },
   rowTitle: { color: "rgba(255,255,255,0.85)", fontSize: 14, fontWeight: "700" },
   rowRight: { color: "#fff", fontSize: 14, fontWeight: "900" },
@@ -634,9 +803,26 @@ const styles = StyleSheet.create({
   recentEmpty: { borderRadius: 18, padding: 14, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" },
   recentEmptyText: { color: "rgba(255,255,255,0.55)", fontSize: 13, lineHeight: 18, fontWeight: "700" },
   recentList: { borderRadius: 18, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)", overflow: "hidden" },
-  recentItem: { paddingHorizontal: 14, paddingVertical: 12, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.06)" },
+  recentItem: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.06)",
+  },
   recentLeft: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1, paddingRight: 10 },
-  recentBadge: { width: 28, height: 28, borderRadius: 10, backgroundColor: "rgba(0,0,0,0.25)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center" },
+  recentBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 10,
+    backgroundColor: "rgba(0,0,0,0.25)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   recentBadgeText: { color: "#2D6BFF", fontWeight: "900" },
   recentLine1: { color: "rgba(255,255,255,0.85)", fontSize: 12, fontWeight: "800" },
   recentNote: { color: "rgba(255,255,255,0.55)", fontSize: 12, marginTop: 4, fontWeight: "700" },
@@ -648,25 +834,65 @@ const styles = StyleSheet.create({
   modalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
   modalTitle: { color: "#fff", fontSize: 18, fontWeight: "900" },
   modalClose: { color: "rgba(255,255,255,0.65)", fontSize: 18, fontWeight: "900" },
-  modalSub: { color: "rgba(255,255,255,0.70)", marginTop: 10, fontSize: 13 },
+  modalSub: { color: "rgba(255,255,255,0.7)", marginTop: 10, fontSize: 13 },
   emojiRow: { flexDirection: "row", gap: 8, marginTop: 12 },
-  emojiChip: { flex: 1, borderRadius: 16, paddingVertical: 10, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center" },
+  emojiChip: {
+    flex: 1,
+    borderRadius: 16,
+    paddingVertical: 10,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   emojiChipSelected: { borderColor: "rgba(45,107,255,0.55)", backgroundColor: "rgba(45,107,255,0.12)" },
   emoji: { fontSize: 22 },
-  emojiLabel: { marginTop: 6, color: "rgba(255,255,255,0.70)", fontSize: 11, fontWeight: "800" },
-  noteInput: { marginTop: 10, minHeight: 90, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 12, color: "#fff", backgroundColor: "rgba(0,0,0,0.25)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", fontSize: 14, fontWeight: "600", textAlignVertical: "top" },
+  emojiLabel: { marginTop: 6, color: "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: "800" },
+  noteInput: {
+    marginTop: 10,
+    minHeight: 90,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    color: "#fff",
+    backgroundColor: "rgba(0,0,0,0.25)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    fontSize: 14,
+    fontWeight: "600",
+    textAlignVertical: "top",
+  },
   actionRow: { flexDirection: "row", gap: 10, marginTop: 14 },
-  leftBtn: { flex: 1, height: 52, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.10)", alignItems: "center", justifyContent: "center" },
+  leftBtn: {
+    flex: 1,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   leftBtnText: { color: "rgba(255,255,255,0.88)", fontWeight: "900" },
   rightBtn: { flex: 1, height: 52, borderRadius: 16, backgroundColor: "#2D6BFF", alignItems: "center", justifyContent: "center" },
   rightBtnText: { color: "#fff", fontWeight: "900" },
   supportCard: { width: "100%", borderRadius: 18, padding: 16, backgroundColor: "#0B1220", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
   supportTitle: { color: "#fff", fontSize: 18, fontWeight: "900" },
-  supportSub: { color: "rgba(255,255,255,0.70)", marginTop: 8, fontSize: 13, lineHeight: 18, fontWeight: "700" },
-  breathCard: { marginTop: 12, borderRadius: 18, padding: 14, backgroundColor: "rgba(45,107,255,0.10)", borderWidth: 1, borderColor: "rgba(45,107,255,0.18)" },
+  supportSub: { color: "rgba(255,255,255,0.7)", marginTop: 8, fontSize: 13, lineHeight: 18, fontWeight: "700" },
+  breathCard: { marginTop: 12, borderRadius: 18, padding: 14, backgroundColor: "rgba(45,107,255,0.1)", borderWidth: 1, borderColor: "rgba(45,107,255,0.18)" },
   breathTitle: { color: "#fff", fontWeight: "900", fontSize: 14 },
   breathSteps: { flexDirection: "row", gap: 10, marginTop: 10 },
-  breathStep: { flex: 1, borderRadius: 16, paddingVertical: 10, backgroundColor: "rgba(0,0,0,0.18)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center" },
+  breathStep: {
+    flex: 1,
+    borderRadius: 16,
+    paddingVertical: 10,
+    backgroundColor: "rgba(0,0,0,0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   breathStepLabel: { color: "rgba(255,255,255,0.65)", fontSize: 12, fontWeight: "800" },
   breathStepValue: { color: "#fff", fontSize: 16, fontWeight: "900", marginTop: 4 },
   supportBtn: { marginTop: 12, height: 52, borderRadius: 16, backgroundColor: "#2D6BFF", alignItems: "center", justifyContent: "center" },

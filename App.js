@@ -12,22 +12,23 @@ import SettingsScreen from "./src/screens/SettingsScreen";
 import { OnboardingProvider } from "./src/OnboardingContext";
 import { STORAGE_KEYS } from "./src/storage/keys";
 import PlayScreen from "./src/screens/PlayScreen";
-import { initializeApp, getApps } from '@react-native-firebase/app';
+import { PostHog } from 'posthog-react-native';
+
+// ✅ PostHog'u dışarı aktarıyoruz (DİKKAT: export ekledik)
+export const posthog = new PostHog('phc_pycDtIYtVBRhY4fgDR0Ke4UN4ldYdjkHYXngyTM9itv', {
+  host: 'https://us.i.posthog.com'
+});
 
 const Root = createNativeStackNavigator();
-// Daha güvenli bir başlatma kontrolü
-try {
-  if (getApps().length === 0) {
-    initializeApp();
-  }
-} catch (e) {
-  // Eğer zaten varsa getApp() ile devam et diyebiliriz
-  console.log("Firebase başlatma sırasında: ", e);
-}
 
 export default function App() {
   const [booting, setBooting] = useState(true);
   const [initialRoute, setInitialRoute] = useState("OnboardingFlow");
+
+  useEffect(() => {
+    // Uygulama açılış event'i
+    posthog.capture('app_open');
+  }, []);
 
   useEffect(() => {
     const init = async () => {
@@ -45,18 +46,9 @@ export default function App() {
 
   if (booting) {
     return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: "#0B1220",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <ActivityIndicator />
-        </View>
-      </GestureHandlerRootView>
+      <View style={{ flex: 1, backgroundColor: "#0B1220", alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator />
+      </View>
     );
   }
 
@@ -64,10 +56,7 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <OnboardingProvider>
         <NavigationContainer>
-          <Root.Navigator
-            initialRouteName={initialRoute}
-            screenOptions={{ headerShown: false }}
-          >
+          <Root.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
             <Root.Screen name="OnboardingFlow" component={OnboardingNavigator} />
             <Root.Screen name="homeScreen" component={HomeScreen} />
             <Root.Screen name="settingsScreen" component={SettingsScreen} />

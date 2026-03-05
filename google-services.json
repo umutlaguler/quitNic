@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "407318169175",
+    "project_id": "quitnicotine-a627d",
+    "storage_bucket": "quitnicotine-a627d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:407318169175:android:fbc79c1dae63f61584c512",
+        "android_client_info": {
+          "package_name": "com.umutlaguler.quitnicotine"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD29JDnKSIb0iTPxx9PV8GHt-aRkO67ARM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

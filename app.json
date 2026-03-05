@@ -29,6 +29,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
+      "googleServicesFile": "./google-services.json",
       "package": "com.umutlaguler.quitnicotine"
     },
     "web": {
@@ -36,8 +37,7 @@
     },
     "plugins": [
       "@react-native-community/datetimepicker",
-      "expo-av",
-      "@react-native-firebase/app"
+      "expo-av"
     ],
     "extra": {
       "eas": {
